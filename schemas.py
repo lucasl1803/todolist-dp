@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import date
 from enum import Enum
+from typing import Optional   
 
 
 class TaskStatus(str, Enum):
@@ -38,7 +39,6 @@ class TaskCreate(TaskBase):
 
 class Task(TaskBase):
     id: int
-    category: Category
-
+    category: Optional[Category] = None  
     class Config:
         orm_mode = True

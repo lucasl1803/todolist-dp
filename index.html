@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>To-Do List – Front Simples</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+      background: #111;
+      color: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+    }
+    .card {
+      background: #1e1e1e;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 8px rgba(0,0,0,.4);
+    }
+    label {
+      display: block;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #222;
+      color: #f5f5f5;
+    }
+    button {
+      margin-top: 12px;
+      padding: 8px 14px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background: #3b82f6;
+      color: white;
+      font-weight: bold;
+    }
+    button.delete {
+      background: #ef4444;
+      margin-left: 8px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #1e1e1e;
+      margin-bottom: 8px;
+      padding: 10px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .task-info {
+      flex: 1;
+    }
+    .badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .badge.todo { background: #4b5563; }
+    .badge.in-progress { background: #d97706; }
+    .badge.done { background: #16a34a; }
+  </style>
+</head>
+<body>
+  <h1>To-Do List</h1>
+
+  <div class="card">
+    <h2>Nova tarefa</h2>
+    <p style="font-size:12px;color:#aaa;">
+      Obs: crie pelo menos uma categoria em <code>/docs</code> e use o ID dela abaixo.
+    </p>
+
+    <label for="title">Título</label>
+    <input id="title" type="text" placeholder="Ex: Treinar apresentação TCC" />
+
+    <label for="description">Descrição</label>
+    <textarea id="description" rows="3" placeholder="Detalhes da tarefa "></textarea>
+
+    <label for="due_date">Data limite</label>
+    <input id="due_date" type="date" />
+
+    <label for="status">Status</label>
+    <select id="status">
+      <option value="TODO">A fazer</option>
+      <option value="IN_PROGRESS">Em andamento</option>
+      <option value="DONE">Concluída</option>
+    </select>
+
+    <label for="category_id">ID da categoria</label>
+    <input id="category_id" type="number" placeholder="Ex: 1" />
+
+    <button onclick="createTask()">Adicionar tarefa</button>
+  </div>
+
+  <div class="card">
+    <h2>Tarefas cadastradas</h2>
+    <ul id="task-list"></ul>
+  </div>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000";
+
+    function statusBadgeClass(status) {
+      if (status === "DONE") return "badge done";
+      if (status === "IN_PROGRESS") return "badge in-progress";
+      return "badge todo";
+    }
+
+    async function loadTasks() {
+      try {
+        const res = await fetch(`${API_URL}/tasks/`);
+        const data = await res.json();
+        const list = document.getElementById("task-list");
+        list.innerHTML = "";
+
+        if (!data.length) {
+          list.innerHTML = "<li>Nenhuma tarefa cadastrada .</li>";
+          return;
+        }
+
+        data.forEach(task => {
+          const li = document.createElement("li");
+
+          const info = document.createElement("div");
+          info.className = "task-info";
+          info.innerHTML = `
+            <strong>#${task.id} - ${task.title}</strong><br/>
+            <span>${task.description || ""}</span><br/>
+            <small>Categoria: ${task.category?.name || task.category_id} | 
+            Data: ${task.due_date || "-"} </small><br/>
+            <span class="${statusBadgeClass(task.status)}">${task.status}</span>
+          `;
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "delete";
+          deleteBtn.textContent = "Excluir";
+          deleteBtn.onclick = () => deleteTask(task.id);
+
+          li.appendChild(info);
+          li.appendChild(deleteBtn);
+          list.appendChild(li);
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao carregar tarefas. Verifique se a API está rodando.");
+      }
+    }
+
+    async function createTask() {
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const due_date = document.getElementById("due_date").value || null;
+      const status = document.getElementById("status").value;
+      const category_id = parseInt(document.getElementById("category_id").value, 10);
+
+      if (!title) {
+        alert("Título é obrigatório.");
+        return;
+      }
+      if (!category_id) {
+        alert("Informe o ID de uma categoria (crie antes em /docs).");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/tasks/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            description,
+            due_date,
+            status,
+            category_id
+          })
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          console.error(errorData);
+          alert("Erro ao criar tarefa. Veja o console.");
+          return;
+        }
+
+        
+        document.getElementById("title").value = "";
+        document.getElementById("description").value = "";
+        document.getElementById("due_date").value = "";
+        document.getElementById("status").value = "TODO";
+
+        loadTasks();
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao conectar com a API.");
+      }
+    }
+
+    async function deleteTask(id) {
+      if (!confirm(`Tem certeza que deseja excluir a tarefa #${id}?`)) return;
+
+      try {
+        const res = await fetch(`${API_URL}/tasks/${id}`, {
+          method: "DELETE"
+        });
+
+        if (!res.ok) {
+          alert("Erro ao excluir tarefa.");
+          return;
+        }
+
+        loadTasks();
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao conectar com a API.");
+      }
+    }
+
+
+    loadTasks();
+  </script>
+</body>
+</html>
