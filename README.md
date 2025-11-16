@@ -1,7 +1,10 @@
 ==============  To-Do List API — Desafio Profissional (FastAPI + SQLite)  ============== 
 
-Este projeto foi desenvolvido como parte do Desafio Profissional da graduação em Engenharia de Software.
+Projeto final da máteria de Desafio Profissiol V:
+
 A solução consiste em uma API de Gerenciamento de Tarefas (To-Do List) com CRUD completo, persistência em banco SQLite, documentação automática, testes básicos e um front-end simples para interação visual.
+
+Obrigado Professor Cidão! :D
 
 Links importantes
 
